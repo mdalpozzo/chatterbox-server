@@ -1,3 +1,6 @@
+// import { read } from "fs";
+const querystring = require('querystring');
+
 /*************************************************************
 
 You should implement your request handler function in this file.
@@ -50,29 +53,53 @@ this file and include it in basic-server.js so that it actually works.
 var messages = [];
 
 var requestHandler = function(request, response) {
-  console.log(messages);
+  // console.log('request', request);
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
 
   var headers = defaultCorsHeaders;
   headers['Content-Type'] = 'text/plain';
 
-  var statusCode = 400;
+  var statusCode = 404;
 
-  if (request.method === 'POST') {
-    statusCode = 201; // 201: created
-    response.writeHead(statusCode, headers);
-    requestHandler.messages.push(request._postData);
-    response.end(JSON.stringify( request._postData ));
-  }
+    // console.log('body', body);
+  
+    if (request.method === 'POST' && request.url === '/classes/messages') {
 
-  if (request.method === 'GET') {
-    statusCode = 200; // 200: OK
-    response.writeHead(statusCode, headers);
-    response.end(JSON.stringify({results: requestHandler.messages}));
-  }
+      statusCode = 201; // 201: created
+      response.writeHead(statusCode, headers);
+
+      let body = [];
+      request.on('error', (err) => {
+        console.error(err);
+      }).on('data', (chunk) => {
+        console.log(chunk)
+        body.push(chunk);
+      }).on('end', ()=>{
+        console.log('body', body);
+        body = (body).join();
+
+        console.log('body', body);
+        messages.push(querystring.parse(body));
+        response.end(body);
+      })
+    } else if (request.method === 'GET' && request.url === '/classes/messages') {
+      statusCode = 200; // 200: OK
+      response.writeHead(statusCode, headers);
+      response.end(JSON.stringify({results: messages}));
+    } else if (request.method === 'OPTIONS') {
+      // console.log('options request', request);
+      statusCode = 204; // 200: OK
+      response.writeHead(statusCode, headers);
+      response.end();
+    } else {
+      response.writeHead(statusCode, headers);
+      response.end(JSON.stringify('dont do that'));
+    }
+
+
+
+
 };
-
-requestHandler.messages = [];
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
@@ -91,4 +118,4 @@ var defaultCorsHeaders = {
 };
 
 
-module.exports = requestHandler;
+exports.requestHandler = requestHandler;
